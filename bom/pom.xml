@@ -150,6 +150,8 @@
         <jetty.version>9.4.15.v20190215</jetty.version>
         <flyway.version>5.2.4</flyway.version>
         <yasson.version>1.0.3</yasson.version>
+
+        <submarine.version>8.0.0-SNAPSHOT</submarine.version>
     </properties>
 
     <dependencyManagement>
@@ -425,6 +427,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-drools</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
