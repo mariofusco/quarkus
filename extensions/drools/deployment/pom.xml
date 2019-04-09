@@ -54,6 +54,13 @@
             <artifactId>xstream</artifactId>
             <version>1.4.10</version>
         </dependency>
+
+        <!-- test -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

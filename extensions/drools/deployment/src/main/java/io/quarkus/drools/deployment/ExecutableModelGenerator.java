@@ -114,7 +114,8 @@ public class ExecutableModelGenerator {
 
     private MemoryFileSystem generateModel(ArchiveRootBuildItem root) {
         Path targetClassesPath = root.getPath();
-        Path projectPath = targetClassesPath.getParent().getParent();
+        Path projectPath = targetClassesPath.toString().endsWith("target/classes") ? targetClassesPath.getParent().getParent()
+                : targetClassesPath;
 
         KieBuilder kieBuilder = KieServices.get().newKieBuilder(projectPath.toFile(), getClassLoader());
         ((KieBuilderImpl) kieBuilder).buildAll(ExecutableModelCodeGenerationProject.class, o -> false);
