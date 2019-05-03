@@ -12,17 +12,15 @@ import java.util.Set;
 import org.kie.submarine.codegen.ApplicationGenerator;
 import org.kie.submarine.codegen.GeneratedFile;
 import org.kie.submarine.codegen.Generator;
+import org.kie.submarine.codegen.rules.RuleCodegen;
 
 import io.quarkus.dev.JavaCompilationProvider;
 import io.quarkus.gizmo.ClassCreator;
 
-public abstract class KieCompilationProvider extends JavaCompilationProvider {
+public class RulesCompilationProvider1 extends JavaCompilationProvider {
 
-    public abstract String handledExtension();
-
-    @Override
-    public boolean isCompiledPathModified(Path resource, Path sourcesDir, Path classesDir, long sourceMod) {
-        return false;
+    public String handledExtension() {
+        return ".drl";
     }
 
     @Override
@@ -33,6 +31,7 @@ public abstract class KieCompilationProvider extends JavaCompilationProvider {
 
             ApplicationGenerator appGen = new ApplicationGenerator(appPackageName, outputDirectory)
                     .withDependencyInjection(true);
+
             Generator generator = addGenerator(appGen, filesToCompile, context);
 
             Collection<GeneratedFile> generatedFiles = generator.generate();
@@ -44,14 +43,20 @@ public abstract class KieCompilationProvider extends JavaCompilationProvider {
                 generatedSourceFiles.add(path.toFile());
             }
             super.compile(generatedSourceFiles, context);
-            touchEmptyClassFiles(filesToCompile);
+            //            touchEmptyClassFiles(filesToCompile);
         } catch (IOException e) {
             throw new KieCompilerException(e);
         }
     }
 
-    protected abstract Generator addGenerator(ApplicationGenerator appGen, Set<File> filesToCompile, Context context)
-            throws IOException;
+    protected Generator addGenerator(ApplicationGenerator appGen, Set<File> filesToCompile, Context context)
+            throws IOException {
+        return appGen.withGenerator(
+                RuleCodegen.ofFiles(
+                        context.getOutputDirectory().toPath().getParent().getParent(),
+                        filesToCompile));
+
+    }
 
     /*
      *
@@ -59,7 +64,7 @@ public abstract class KieCompilationProvider extends JavaCompilationProvider {
      * so we create one to make it happy
      *
      */
-    protected void touchEmptyClassFiles(Set<File> filesToCompile) {
+    private void touchEmptyClassFiles(Set<File> filesToCompile) {
         String SRCMAINJAVA = "src/main/java";
 
         for (File file : filesToCompile) {
