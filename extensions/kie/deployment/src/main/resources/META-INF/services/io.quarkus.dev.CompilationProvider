@@ -1,2 +1,2 @@
 io.quarkus.drools.deployment.ProcessCompilationProvider
-io.quarkus.drools.deployment.RulesCompilationProvider1
+io.quarkus.drools.deployment.RulesCompilationProvider
