@@ -1,2 +1,3 @@
 io.quarkus.drools.deployment.ProcessCompilationProvider
 io.quarkus.drools.deployment.RulesCompilationProvider
+io.quarkus.drools.deployment.DecisionTablesCompilationProvider

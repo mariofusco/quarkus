@@ -14,7 +14,6 @@ import org.kie.submarine.codegen.GeneratedFile;
 import org.kie.submarine.codegen.Generator;
 
 import io.quarkus.dev.JavaCompilationProvider;
-import io.quarkus.gizmo.ClassCreator;
 
 public abstract class KieCompilationProvider extends JavaCompilationProvider {
 
@@ -44,7 +43,6 @@ public abstract class KieCompilationProvider extends JavaCompilationProvider {
                 generatedSourceFiles.add(path.toFile());
             }
             super.compile(generatedSourceFiles, context);
-            touchEmptyClassFiles(filesToCompile);
         } catch (IOException e) {
             throw new KieCompilerException(e);
         }
@@ -52,42 +50,6 @@ public abstract class KieCompilationProvider extends JavaCompilationProvider {
 
     protected abstract Generator addGenerator(ApplicationGenerator appGen, Set<File> filesToCompile, Context context)
             throws IOException;
-
-    /*
-     *
-     * quarkus core expects compiled(foo/bar/baz/origin.ext) == foo/bar/baz/origin.class
-     * so we create one to make it happy
-     *
-     */
-    protected void touchEmptyClassFiles(Set<File> filesToCompile) {
-        String SRCMAINJAVA = "src/main/java";
-
-        for (File file : filesToCompile) {
-            file.getParentFile().mkdirs();
-            String filePath = file.getPath();
-            int index = filePath.indexOf(SRCMAINJAVA) + SRCMAINJAVA.length() + 1;
-            String className = filePath.substring(index)
-                    .replace(handledExtension(), "");
-
-            String classFileName = filePath.replace(SRCMAINJAVA, "target/classes")
-                    .substring(0, 1 + filePath.length() - handledExtension().length()) + ".class";
-
-            writeEmptyClassFile(className, classFileName);
-        }
-    }
-
-    private void writeEmptyClassFile(String className, String classFileName) {
-        ClassCreator
-                .builder()
-                .className(className)
-                .classOutput((name, data) -> {
-                    try {
-                        Files.write(Paths.get(classFileName), data);
-                    } catch (IOException e) {
-                        throw new KieCompilerException(e);
-                    }
-                }).build().close();
-    }
 
     private Path pathOf(String path, String relativePath) {
         Path p = Paths.get(path, relativePath);
