@@ -23,24 +23,24 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.resteasy.server.common.deployment.JaxRsResourceBuildItem;
 import org.drools.compiler.commons.jci.compilers.CompilationResult;
 import org.drools.compiler.commons.jci.compilers.JavaCompiler;
+import org.drools.compiler.commons.jci.compilers.JavaCompilerSettings;
 import org.drools.compiler.compiler.io.memory.MemoryFileSystem;
-import org.drools.compiler.rule.builder.dialect.java.JavaDialectConfiguration;
 import org.drools.modelcompiler.builder.JavaParserCompiler;
 import org.kie.submarine.codegen.ApplicationGenerator;
 import org.kie.submarine.codegen.GeneratedFile;
 import org.kie.submarine.codegen.process.ProcessCodegen;
 import org.kie.submarine.codegen.rules.RuleCodegen;
 
-import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.resteasy.server.common.deployment.JaxRsResourceBuildItem;
+import static io.quarkus.drools.deployment.KieCompilationProvider.DEV_MODE;
 
 public class KieAssetsProcessor {
 
@@ -51,12 +51,15 @@ public class KieAssetsProcessor {
         return new FeatureBuildItem("kie");
     }
 
-    //    @BuildStep
+    @BuildStep
     public void generateModel(ArchiveRootBuildItem root,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JaxRsResourceBuildItem> jaxRsResources) throws IOException {
+
+        if (DEV_MODE) {
+            return;
+        }
 
         boolean generateRuleUnits = true;
         boolean generateProcesses = true;
@@ -67,7 +70,7 @@ public class KieAssetsProcessor {
 
         Collection<GeneratedFile> generatedFiles = appGen.generate();
 
-        compileAndRegister(generatedFiles, generatedBeans, generatedClasses);
+        compileAndRegister(root, generatedFiles, generatedBeans);
 
         for (GeneratedFile entry : generatedFiles) {
             String className = toClassName(entry.relativePath());
@@ -77,14 +80,16 @@ public class KieAssetsProcessor {
         }
     }
 
-    private void compileAndRegister(Collection<GeneratedFile> generatedFiles,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeans, BuildProducer<GeneratedClassBuildItem> generatedClasses)
+    private void compileAndRegister(ArchiveRootBuildItem root, Collection<GeneratedFile> generatedFiles,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans)
             throws IOException {
         if (generatedFiles.isEmpty()) {
             return;
         }
 
-        JavaCompiler javaCompiler = JavaParserCompiler.getCompiler(JavaDialectConfiguration.CompilerType.ECLIPSE);
+        JavaCompiler javaCompiler = JavaParserCompiler.getCompiler();
+        JavaCompilerSettings compilerSettings = javaCompiler.createDefaultSettings();
+        compilerSettings.addClasspath(root.getPath().toString());
 
         MemoryFileSystem srcMfs = new MemoryFileSystem();
         MemoryFileSystem trgMfs = new MemoryFileSystem();
@@ -101,10 +106,9 @@ public class KieAssetsProcessor {
         }
 
         CompilationResult result = javaCompiler.compile(sources, srcMfs, trgMfs,
-                Thread.currentThread().getContextClassLoader());
+                Thread.currentThread().getContextClassLoader(), compilerSettings);
 
         if (result.getErrors().length > 0) {
-
             StringBuilder errorInfo = new StringBuilder();
             Arrays.stream(result.getErrors()).forEach(cp -> errorInfo.append(cp.toString()));
             throw new IllegalStateException(errorInfo.toString());
@@ -113,7 +117,6 @@ public class KieAssetsProcessor {
 
         for (String fileName : trgMfs.getFileNames()) {
             generatedBeans.produce(new GeneratedBeanBuildItem(toClassName(fileName), trgMfs.getBytes(fileName)));
-
         }
     }
 
