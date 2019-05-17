@@ -23,13 +23,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 
-import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import io.quarkus.resteasy.server.common.deployment.JaxRsResourceBuildItem;
 import org.drools.compiler.commons.jci.compilers.CompilationResult;
 import org.drools.compiler.commons.jci.compilers.JavaCompiler;
 import org.drools.compiler.commons.jci.compilers.JavaCompilerSettings;
@@ -40,7 +33,15 @@ import org.kie.submarine.codegen.GeneratedFile;
 import org.kie.submarine.codegen.process.ProcessCodegen;
 import org.kie.submarine.codegen.rules.RuleCodegen;
 
-import static io.quarkus.drools.deployment.KieCompilationProvider.DEV_MODE;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.resteasy.server.common.deployment.JaxRsResourceBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
 public class KieAssetsProcessor {
 
@@ -55,22 +56,22 @@ public class KieAssetsProcessor {
     public void generateModel(ArchiveRootBuildItem root,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<JaxRsResourceBuildItem> jaxRsResources) throws IOException {
+            BuildProducer<JaxRsResourceBuildItem> jaxRsResources,
+            LaunchModeBuildItem launchMode) throws IOException {
 
-        if (DEV_MODE) {
+        if (hotReload(launchMode.getLaunchMode())) {
             return;
         }
 
         boolean generateRuleUnits = true;
         boolean generateProcesses = true;
 
-        ApplicationGenerator appGen = createApplicationGenerator(root,
-                generateRuleUnits,
+        ApplicationGenerator appGen = createApplicationGenerator(root, launchMode.getLaunchMode(), generateRuleUnits,
                 generateProcesses);
 
         Collection<GeneratedFile> generatedFiles = appGen.generate();
 
-        compileAndRegister(root, generatedFiles, generatedBeans);
+        compileAndRegister(root, generatedFiles, generatedBeans, launchMode.getLaunchMode());
 
         for (GeneratedFile entry : generatedFiles) {
             String className = toClassName(entry.relativePath());
@@ -80,8 +81,24 @@ public class KieAssetsProcessor {
         }
     }
 
+    private boolean hotReload(LaunchMode launchMode) {
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            Path kiePath = Paths.get("devmode.kie");
+            if (Files.exists(kiePath)) {
+                return true;
+            } else {
+                try {
+                    Files.write(kiePath, new byte[0]);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return false;
+    }
+
     private void compileAndRegister(ArchiveRootBuildItem root, Collection<GeneratedFile> generatedFiles,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeans)
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans, LaunchMode launchMode)
             throws IOException {
         if (generatedFiles.isEmpty()) {
             return;
@@ -112,17 +129,27 @@ public class KieAssetsProcessor {
             StringBuilder errorInfo = new StringBuilder();
             Arrays.stream(result.getErrors()).forEach(cp -> errorInfo.append(cp.toString()));
             throw new IllegalStateException(errorInfo.toString());
-
         }
 
         for (String fileName : trgMfs.getFileNames()) {
-            generatedBeans.produce(new GeneratedBeanBuildItem(toClassName(fileName), trgMfs.getBytes(fileName)));
+            byte[] data = trgMfs.getBytes(fileName);
+            generatedBeans.produce(new GeneratedBeanBuildItem(toClassName(fileName), data));
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                writeFile(fileName, data);
+            }
         }
     }
 
-    private ApplicationGenerator createApplicationGenerator(ArchiveRootBuildItem root,
-            boolean generateRuleUnits,
-            boolean generateProcesses) throws IOException {
+    private void writeFile(String fileName, byte[] data) throws IOException {
+        Path path = Paths.get(fileName);
+        if (!Files.exists(path.getParent())) {
+            Files.createDirectories(path.getParent());
+        }
+        Files.write(path, data);
+    }
+
+    private ApplicationGenerator createApplicationGenerator(ArchiveRootBuildItem root, LaunchMode launchMode,
+            boolean generateRuleUnits, boolean generateProcesses) throws IOException {
         Path targetClassesPath = root.getPath();
         Path projectPath = targetClassesPath.toString().endsWith("target/classes") ? targetClassesPath.getParent().getParent()
                 : targetClassesPath;
@@ -133,7 +160,7 @@ public class KieAssetsProcessor {
                 .withDependencyInjection(true);
 
         if (generateRuleUnits) {
-            appGen.withGenerator(RuleCodegen.ofPath(projectPath));
+            appGen.withGenerator(RuleCodegen.ofPath(projectPath, launchMode == LaunchMode.DEVELOPMENT));
         }
 
         if (generateProcesses) {

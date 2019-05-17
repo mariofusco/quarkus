@@ -17,8 +17,6 @@ import io.quarkus.dev.JavaCompilationProvider;
 
 public abstract class KieCompilationProvider extends JavaCompilationProvider {
 
-    static boolean DEV_MODE = false;
-
     public abstract String handledExtension();
 
     @Override
@@ -28,7 +26,6 @@ public abstract class KieCompilationProvider extends JavaCompilationProvider {
 
     @Override
     public final void compile(Set<File> filesToCompile, Context context) {
-        DEV_MODE = true;
         String appPackageName = System.getProperty("kie.codegen.packageName", "org.kie");
         File outputDirectory = context.getOutputDirectory();
         try {
