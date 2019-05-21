@@ -159,11 +159,18 @@
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
+        <kie.version>8.0.0-SNAPSHOT</kie.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
             <!-- External BOMs -->
+
+            <dependency>
+                <groupId>org.kie</groupId>
+                <artifactId>submarine-codegen</artifactId>
+                <version>${kie.version}</version>
+            </dependency>
 
             <!-- Netty dependencies, imported as a BOM -->
             <dependency>
@@ -244,6 +251,11 @@
 
             <!-- Quarkus extensions -->
 
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kie</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal</artifactId>
