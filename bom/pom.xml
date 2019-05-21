@@ -162,11 +162,23 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <keycloak.version>6.0.1</keycloak.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
+        <kogito.version>8.0.0-SNAPSHOT</kogito.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
             <!-- External BOMs -->
+
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>kogito-codegen</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>drools-core-static</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
 
             <!-- Netty dependencies, imported as a BOM -->
             <dependency>
@@ -247,6 +259,11 @@
 
             <!-- Quarkus extensions -->
 
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kogito</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal</artifactId>
