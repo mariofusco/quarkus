@@ -59,6 +59,10 @@
       <version>${swagger.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.drools</groupId>
+      <artifactId>drools-core-static</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.kie</groupId>
       <artifactId>submarine-codegen</artifactId>
     </dependency>

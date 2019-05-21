@@ -171,6 +171,11 @@
                 <artifactId>submarine-codegen</artifactId>
                 <version>${kie.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.drools</groupId>
+                <artifactId>drools-core-static</artifactId>
+                <version>${kie.version}</version>
+            </dependency>
 
             <!-- Netty dependencies, imported as a BOM -->
             <dependency>
