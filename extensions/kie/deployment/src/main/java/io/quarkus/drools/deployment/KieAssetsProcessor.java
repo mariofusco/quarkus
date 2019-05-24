@@ -55,7 +55,6 @@ public class KieAssetsProcessor {
     public void generateModel(ArchiveRootBuildItem root,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            //            BuildProducer<JaxRsResourceBuildItem> jaxRsResources,
             LaunchModeBuildItem launchMode) throws IOException {
 
         if (hotReload(launchMode.getLaunchMode())) {
@@ -71,13 +70,6 @@ public class KieAssetsProcessor {
         Collection<GeneratedFile> generatedFiles = appGen.generate();
 
         compileAndRegister(root, generatedFiles, generatedBeans, launchMode.getLaunchMode());
-
-        //        for (GeneratedFile entry : generatedFiles) {
-        //            String className = toClassName(entry.relativePath());
-        //            if (entry.getType().equals(GeneratedFile.Type.REST)) {
-        //                jaxRsResources.produce(new JaxRsResourceBuildItem(className));
-        //            }
-        //        }
     }
 
     private boolean hotReload(LaunchMode launchMode) {
