@@ -14,45 +14,49 @@
  * limitations under the License.
  */
 
-package io.quarkus.kogito.drools;
+package io.quarkus.kogito.jbpm;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.core.Is.is;
 
 import javax.inject.Inject;
 
-import org.drools.modelcompiler.KieRuntimeBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.kie.api.runtime.KieSession;
+import org.kie.kogito.Application;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.restassured.http.ContentType;
 
-public class RuntimeTest {
+public class ProcessEndpointTest {
+
+    static {
+        System.setProperty("resteasy.use.builtin.providers", "true");
+    }
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Person.class, Result.class)
-                    .addAsResource("META-INF/kmodule.xml", "src/main/resources/META-INF/kmodule.xml")
-                    .addAsResource("org/drools/simple/candrink/CanDrink.drl",
-                            "src/main/resources/org/drools/simple/candrink/CanDrink.drl")
+                    .addAsResource("test-process.bpmn",
+                            "src/main/resources/test-process.bpmn")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
-    KieRuntimeBuilder runtimeBuilder;
+    Application application;
 
     @Test
-    public void testRuleEvaluation() {
-        KieSession ksession = runtimeBuilder.newKieSession();
+    public void testProcessRestEndpoint() {
 
-        Result result = new Result();
-        ksession.insert(result);
-        ksession.insert(new Person("Mark", 17));
-        ksession.fireAllRules();
-
-        assertEquals("Mark can NOT drink", result.toString());
+        given()
+                .body("{}")
+                .contentType(ContentType.JSON)
+                .when()
+                .post("/tests")
+                .then()
+                .statusCode(200)
+                .body("id", is(1));
     }
 }

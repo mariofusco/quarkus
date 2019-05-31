@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.quarkus.kogito.deployment;
 
 import java.io.File;
@@ -39,7 +40,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class KogitoAssetsProcessor {
@@ -54,7 +54,6 @@ public class KogitoAssetsProcessor {
     @BuildStep
     public void generateModel(ArchiveRootBuildItem root,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             LaunchModeBuildItem launchMode) throws IOException {
 
         if (hotReload(launchMode.getLaunchMode())) {
@@ -74,12 +73,12 @@ public class KogitoAssetsProcessor {
 
     private boolean hotReload(LaunchMode launchMode) {
         if (launchMode == LaunchMode.DEVELOPMENT) {
-            Path kiePath = Paths.get("devmode.kie");
-            if (Files.exists(kiePath)) {
+            Path kogitoPath = Paths.get("devmode.kogito");
+            if (Files.exists(kogitoPath)) {
                 return true;
             } else {
                 try {
-                    Files.write(kiePath, new byte[0]);
+                    Files.write(kogitoPath, new byte[0]);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -89,7 +88,8 @@ public class KogitoAssetsProcessor {
     }
 
     private void compileAndRegister(ArchiveRootBuildItem root, Collection<GeneratedFile> generatedFiles,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeans, LaunchMode launchMode)
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            LaunchMode launchMode)
             throws IOException {
         if (generatedFiles.isEmpty()) {
             return;
@@ -124,7 +124,9 @@ public class KogitoAssetsProcessor {
 
         for (String fileName : trgMfs.getFileNames()) {
             byte[] data = trgMfs.getBytes(fileName);
-            generatedBeans.produce(new GeneratedBeanBuildItem(toClassName(fileName), data));
+            String className = toClassName(fileName);
+            generatedBeans.produce(new GeneratedBeanBuildItem(className, data));
+
             if (launchMode == LaunchMode.DEVELOPMENT) {
                 writeFile(fileName, data);
             }
@@ -145,13 +147,14 @@ public class KogitoAssetsProcessor {
         Path projectPath = targetClassesPath.toString().endsWith("target/classes") ? targetClassesPath.getParent().getParent()
                 : targetClassesPath;
 
-        String appPackageName = "org.kie";
+        String appPackageName = "org.kie.kogito.app";
 
         ApplicationGenerator appGen = new ApplicationGenerator(appPackageName, new File(projectPath.toFile(), "target"))
                 .withDependencyInjection(true);
 
         if (generateRuleUnits) {
-            appGen.withGenerator(RuleCodegen.ofPath(projectPath, launchMode == LaunchMode.DEVELOPMENT));
+            appGen.withGenerator(RuleCodegen.ofPath(projectPath, launchMode == LaunchMode.DEVELOPMENT))
+                    .withRuleEventListenersConfig(customRuleEventListenerConfigExists(projectPath, appPackageName));
         }
 
         if (generateProcesses) {
@@ -181,6 +184,15 @@ public class KogitoAssetsProcessor {
                 "main/java",
                 processEventListenerClass.replace('.', '/') + ".java");
         return Files.exists(p) ? processEventListenerClass : null;
+    }
+
+    private String customRuleEventListenerConfigExists(Path projectPath, String appPackageName) {
+        String sourceDir = Paths.get(projectPath.toString(), "src").toString();
+        String ruleEventListenerConfiglass = RuleCodegen.defaultRuleEventListenerConfigClass(appPackageName);
+        Path p = Paths.get(sourceDir,
+                "main/java",
+                ruleEventListenerConfiglass.replace('.', '/') + ".java");
+        return Files.exists(p) ? ruleEventListenerConfiglass : null;
     }
 
     private String toRuntimeSource(String className) {

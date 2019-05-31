@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.quarkus.kogito.jbpm;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.inject.spi.BeanManager;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -26,7 +29,9 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.kie.kogito.Model;
 import org.kie.kogito.process.Process;
+import org.kie.kogito.process.ProcessInstance;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -41,18 +46,17 @@ public class ProcessTest {
 
     @Inject
     @Named("tests")
-    Process<?> process;
-
-    @Inject
-    BeanManager beanManager;
+    Process<? extends Model> process;
 
     @Test
     public void testProcess() throws Exception {
 
-        Object model = Class.forName("com.company.TestsModel").newInstance();
-        Process p = process;
-        assertNotNull(process);
-        p.createInstance(model).start();
-        System.out.println(process.instances());
+        Model m = process.createModel();
+        Map<String, Object> parameters = new HashMap<>();
+        m.fromMap(parameters);
+
+        ProcessInstance<?> processInstance = process.createInstance(m);
+        processInstance.start();
+        assertEquals(org.kie.api.runtime.process.ProcessInstance.STATE_COMPLETED, processInstance.status());
     }
 }

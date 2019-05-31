@@ -19,11 +19,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>quarkus-kogito-deployment</artifactId>
-  <name>Quarkus - KIE (Drools and jBPM)- Deployment</name>
-
-  <properties>
-    <swagger.version>1.5.21</swagger.version>
-  </properties>
+  <name>Quarkus - Kogito - Deployment</name>
 
   <dependencies>
     <!-- quarkus -->
