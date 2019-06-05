@@ -1961,6 +1961,11 @@
             </dependency>
             <dependency>
                 <groupId>org.kie.kogito</groupId>
+                <artifactId>drools-model-compiler</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
                 <artifactId>kogito-api</artifactId>
                 <version>${kogito.version}</version>
             </dependency>
