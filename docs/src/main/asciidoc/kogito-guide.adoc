@@ -38,7 +38,7 @@ install from Market place
 
 In this example, we build a very simple microservice which offers one REST endpoint:
 
-* `/approvals`
+* `/persons`
 
 This endpoint will be automatically generated based on business process, that in turn will
 make use of business rules to make certain decisions based on the data being processed by the process.
@@ -169,7 +169,7 @@ This process should consists of
 
 And should look like
 
-image::images/kogito-guide-screenshot.png
+image:kogito-guide-screenshot.png[alt=Architecture]
 
 To get started quickly copy the process definition from
 {quickstarts-tree-url}/using-kogito/src/main/resources/org/acme/kogito/persons.bpmn2[quickstart]
